@@ -14,21 +14,31 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_DESC: "My Customized Universal Blue Image"
-  IMAGE_KEYWORDS: "bootc,ublue,universal-blue"
+  IMAGE_DESC: "Bazzite KDE DX Development Environment - Custom bootc image with KDE unstable builds"
+  IMAGE_KEYWORDS: "bootc,ublue,universal-blue,bazzite,kde,development"
   IMAGE_LOGO_URL: "https://avatars.githubusercontent.com/u/120078124?s=200&v=4"  # Put your own image here for a fancy profile on https://artifacthub.io/!
   IMAGE_NAME: "${{ github.event.repository.name }}"  # output image name, usually same as repo name
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
   DEFAULT_TAG: "latest"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   build_push:
     name: Build and push image
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - name: dx
+            base_image: ghcr.io/ublue-os/bazzite-dx:latest
+            suffix: ""
+          - name: nvidia
+            base_image: ghcr.io/ublue-os/bazzite-dx-nvidia:latest
+            suffix: "-nvidia"
 
     permissions:
       contents: read
@@ -38,9 +48,11 @@ jobs:
     steps:
       - name: Prepare environment
         run: |
-          # Lowercase the image uri
+          # Lowercase the image uri and add variant suffix
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
-          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          echo "IMAGE_NAME=${IMAGE_NAME,,}${{ matrix.variant.suffix }}" >> ${GITHUB_ENV}
+          echo "BASE_IMAGE=${{ matrix.variant.base_image }}" >> ${GITHUB_ENV}
+          echo "VARIANT_NAME=${{ matrix.variant.name }}" >> ${GITHUB_ENV}
 
       # These stage versions are pinned by https://github.com/renovatebot/renovate
       - name: Checkout
@@ -103,6 +115,9 @@ jobs:
         with:
           containerfiles: |
             ./Containerfile
+          # Build arguments for base image selection
+          build-args: |
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
           # Postfix image name with -custom to make it a little more descriptive
           # Syntax: https://docs.github.com/en/actions/learn-github-actions/expressions#format
           image: ${{ env.IMAGE_NAME }}
