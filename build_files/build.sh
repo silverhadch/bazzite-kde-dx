@@ -56,7 +56,7 @@ rm -f /tmp/dnf-error
 ### 🔧 KDE Build Dependencies
 log "Installing KDE build dependencies..."
 if ! dnf5 install -y --skip-broken --skip-unavailable --allowerasing \
-    git python3-dbus python3-pyyaml python3-setproctitle clang-devel 2>/tmp/dnf-error; then
+    git python3-dbus python3-pyyaml python3-setproctitle clang-devel kf6-kirigami-devel kf6-qqc2-desktop-style-devel 2>/tmp/dnf-error; then
     error "Some KDE build dependencies failed to install: $(grep -v '^Last metadata' /tmp/dnf-error | head -n5)"
 fi
 
