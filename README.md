@@ -1,4 +1,4 @@
-# bazzite-kde-dx
+# ⚙️ bazzite-kde-dx
 
 A Bazzite Image with git master Plasma and Gears plus full KDE development tools.Perfect for KDE developers who want to game too.
 
