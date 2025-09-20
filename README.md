@@ -1,6 +1,6 @@
 # ⚙️ bazzite-kde-dx
 
-A Bazzite Image with git master Plasma and Gears plus full KDE development tools.Perfect for KDE developers who want to game too.
+A Bazzite Image with git master Plasma and Gears plus full KDE development tools. Perfect for KDE developers who want to game too.
 
 ## Features
 
@@ -29,4 +29,4 @@ Reboot afterwards to apply the image.
 
 ## Credits
 
-Customizations by @silverhadch. Based on Bazzite and the Universal Blue Project.
+Customizations by @silverhadch. Based on Bazzite and the Universal Blue Project. Using Solopashas Coprs for KDE Master Builds.
