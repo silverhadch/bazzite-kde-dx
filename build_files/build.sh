@@ -117,7 +117,7 @@ mkdir -p /usr/share/ublue-kde-dev
 cp -r ./* /usr/share/ublue-kde-dev
 
 ln -sf /usr/share/ublue-kde-dev/ublue-kde-dev.py /usr/bin/ublue-kde-dev
-chmod +x /usr/bin/kde-builder
+chmod +x /usr/share/ublue-kde-dev/ublue-kde-dev.py
 
 popd >/dev/null
 rm -rf "$tmpdir"
