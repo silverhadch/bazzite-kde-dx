@@ -105,23 +105,6 @@ ln -sf /usr/share/kde-builder/data/completions/zsh/_kde-builder_projects_and_gro
 popd >/dev/null
 rm -rf "$tmpdir"
 
-### 🛠 Install ublue-kde-dev (manual clone + symlinks)
-log "Installing ublue-kde-dev..."
-tmpdir=$(mktemp -d)
-pushd "$tmpdir" >/dev/null
-
-git clone https://github.com/ledif/ublue-kde-dev.git
-cd ublue-kde-dev
-
-mkdir -p /usr/share/ublue-kde-dev
-cp -r ./* /usr/share/ublue-kde-dev
-
-ln -sf /usr/share/ublue-kde-dev/ublue-kde-dev.py /usr/bin/ublue-kde-dev
-chmod +x /usr/share/ublue-kde-dev/ublue-kde-dev.py
-
-popd >/dev/null
-rm -rf "$tmpdir"
-
 ### 🔌 Enable systemd units
 log "Enabling podman socket..."
 systemctl enable podman.socket || error "Failed to enable podman.socket"
