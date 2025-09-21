@@ -7,9 +7,11 @@ This repository builds custom [bootc](https://github.com/bootc-dev/bootc) images
 
 **Both images include KDE Plasma and Gear unstable builds and automatic Flatpak application management via ujust recipes.**  
 
-*If you want a complete KDE development stack and tools like kde-builder for KDE development, you can uncomment those sections in the `build_files/build.sh` file.*  
+If you want a complete KDE development stack and tools like kde-builder for KDE development, you can:
 
-You can also set up a distrobox container called kde-dev with all of the KDE build tools as described at https://blues.win/posts/kde-dev-bazzite/ by running the command `python /usr/share/ublue-kde-dev/ublue-kde-dev.py init` (it takes a little while to run).
+- Uncomment those sections in the `build_files/build.sh` file. 
+
+- and/or set up a distrobox container called kde-dev with all of the KDE build tools as described at https://blues.win/posts/kde-dev-bazzite/ by running the command `python /usr/share/ublue-kde-dev/ublue-kde-dev.py init` (it takes a little while to run).
 
 Idiosyncratically (for my use case), R and RStudio are added as well.  If R or RStudio are not desired, you can comment them out in the `build_files/build.sh` file.
 
