@@ -1,6 +1,6 @@
 # Build argument for base image selection - must be defined before first FROM
 ARG BASE_IMAGE="ghcr.io/ublue-os/aurora-dx:latest"
-
+# NEW TEST COMMENT
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
 COPY build_files /
