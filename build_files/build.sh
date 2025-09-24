@@ -56,7 +56,7 @@ rm -f /tmp/dnf-error
 ### 🔧 KDE Build Dependencies
 log "Installing KDE build dependencies..."
 if ! dnf5 install -y --skip-broken --skip-unavailable --allowerasing \
-    git python3-dbus python3-pyyaml python3-setproctitle clang-devel kf6-kirigami-devel kf6-qqc2-desktop-style-devel kf6-kirigami-addons-devel clang-tools-extra git-clang-format 2>/tmp/dnf-error; then
+    git python3-dbus python3-pyyaml python3-setproctitle clang-devel kf6-kirigami-devel kf6-qqc2-desktop-style-devel kf6-kirigami-addons-devel clang-tools-extra git-clang-format jq 2>/tmp/dnf-error; then
     error "Some KDE build dependencies failed to install: $(grep -v '^Last metadata' /tmp/dnf-error | head -n5)"
 fi
 
@@ -105,9 +105,25 @@ ln -sf /usr/share/kde-builder/data/completions/zsh/_kde-builder_projects_and_gro
 popd >/dev/null
 rm -rf "$tmpdir"
 
+### 🛳 Install latest winboat
+log "Installing latest winboat..."
+REPO="TibixDev/winboat"
+tag=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name')
+version="${tag#v}"
+url="https://github.com/$REPO/releases/download/$tag/winboat-${version}-x86_64.rpm"
+
+log "Downloading $url"
+curl -L -o "winboat-${version}.rpm" "$url"
+
+log "Installing winboat ${version}"
+dnf5 install -y "./winboat-${version}.rpm" || error "Failed to install winboat"
+
 ### 🔌 Enable systemd units
 log "Enabling podman socket..."
 systemctl enable podman.socket || error "Failed to enable podman.socket"
 
 log "Enabling waydroid service..."
 systemctl enable waydroid-container.service || error "Failed to enable waydroid-container.service"
+
+log "Enabling and starting docker..."
+systemctl enable --now docker.service || error "Failed to enable/start docker"
