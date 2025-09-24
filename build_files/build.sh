@@ -105,18 +105,38 @@ ln -sf /usr/share/kde-builder/data/completions/zsh/_kde-builder_projects_and_gro
 popd >/dev/null
 rm -rf "$tmpdir"
 
-### 🛳 Install latest winboat
+### 🛳 Install latest winboat (AppImage)
 log "Installing latest winboat..."
 REPO="TibixDev/winboat"
 tag=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | jq -r '.tag_name')
 version="${tag#v}"
-url="https://github.com/$REPO/releases/download/$tag/winboat-${version}-x86_64.rpm"
+url="https://github.com/$REPO/releases/download/$tag/winboat-${version}-x86_64.AppImage"
 
 log "Downloading $url"
-curl -L -o "winboat-${version}.rpm" "$url"
+curl -L -o "winboat-${version}.AppImage" "$url"
 
 log "Installing winboat ${version}"
-dnf5 install -y "./winboat-${version}.rpm" || error "Failed to install winboat"
+mv "./winboat-${version}.AppImage" /usr/bin/winboat || error "Failed to install winboat"
+chmod +x /usr/bin/winboat
+
+### 🖼 Install icon
+log "Installing winboat icon..."
+install -Dm644 /dev/null "/usr/share/icons/hicolor/scalable/apps/winboat.svg"
+curl -L "https://raw.githubusercontent.com/TibixDev/winboat/refs/heads/main/gh-assets/winboat_logo.svg" \
+    -o "/usr/share/icons/hicolor/scalable/apps/winboat.svg" || error "Failed to download icon"
+
+### 🖥 Create .desktop file
+log "Creating desktop entry..."
+desktop_file="/usr/share/applications/winboat.desktop"
+echo "[Desktop Entry]"                >  "$desktop_file"
+echo "Name=winboat"                  >> "$desktop_file"
+echo "Exec=/usr/bin/winboat %U"      >> "$desktop_file"
+echo "Terminal=false"                >> "$desktop_file"
+echo "Type=Application"              >> "$desktop_file"
+echo "Icon=winboat"                  >> "$desktop_file"
+echo "StartupWMClass=winboat"        >> "$desktop_file"
+echo "Comment=Windows for Penguins"  >> "$desktop_file"
+echo "Categories=Utility;"           >> "$desktop_file"
 
 ### 🔌 Enable systemd units
 log "Enabling podman socket..."
