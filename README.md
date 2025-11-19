@@ -1,5 +1,11 @@
 # ⚙️ bazzite-kde-dx
 
+**⚠️ Current Status: Broken Until KDE Coprs Recover**
+
+The Copr repositories that provide the Plasma git-master and KDE Gears packages are currently broken upstream.  
+This means the image cannot be built successfully at the moment, and Rawhide fallback repos are also not providing working KDE master builds.  
+Once the Coprs become functional again, image builds will resume normally.
+
 A Bazzite Image with git master Plasma and Gears plus full KDE development tools. Perfect for KDE developers who want to game too.
 
 ## Features
