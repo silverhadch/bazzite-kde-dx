@@ -53,7 +53,7 @@ else
     log "Mode: Rawhide KDE stack (only KDE groups, build deps, dev tools)"
     RAW_URL="https://mirrors.fedoraproject.org/metalink?repo=rawhide&arch=$ARCH"
     log "Adding Rawhide mirrorlist repo"
-    if ! dnf5 -y config-manager --add-repo "$RAW_URL" 2>"$DNF_ERR"; then
+    if ! dnf5 -y config-manager add-repo "$RAW_URL" 2>"$DNF_ERR"; then
         error "Failed to add Rawhide repo: $(grep -v '^Last metadata' $DNF_ERR | head -n5)"
     fi
     # repo id is usually 'rawhide' or 'fedora-rawhide'
