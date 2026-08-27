@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      packages: write
     steps:
       - uses: mathio/gha-cleanup@v1
         with:
@@ -53,19 +54,33 @@ jobs:
           mkdir -p /home/runner/ccache
           chmod 777 /home/runner/ccache
 
-      - name: Capture base image tag
+      - name: Mirror rawhide base image with daily tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/kde-work
-
           DATE=$(date +%Y%m%d)
-          TAG="rawhide.${DATE}.0"
+          TAG="rawhide-${DATE}"
+          MIRROR="ghcr.io/${{ github.repository_owner }}/fedora-plasma-canary-base"
+          MIRROR="${MIRROR,,}"
 
-          echo "Verifying tag exists: ${TAG}"
-          skopeo inspect --no-creds docker://quay.io/fedora-ostree-desktops/base-atomic:${TAG} > /dev/null
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo skopeo login ghcr.io \
+            -u ${{ github.actor }} --password-stdin
 
-          echo "Using stable tag: ${TAG}"
+          echo "Mirroring quay.io/fedora-ostree-desktops/base-atomic:rawhide -> ${MIRROR}:${TAG}"
+          sudo skopeo copy --all \
+            docker://quay.io/fedora-ostree-desktops/base-atomic:rawhide \
+            docker://${MIRROR}:${TAG}
+
+          sudo skopeo copy --all \
+            docker://${MIRROR}:${TAG} \
+            docker://${MIRROR}:latest
+
+          DIGEST=$(sudo skopeo inspect docker://${MIRROR}:${TAG} --format '{{.Digest}}')
           echo "BASE_IMAGE_TAG=${TAG}" >> ${GITHUB_ENV}
-          printf "rawhide=quay.io/fedora-ostree-desktops/base-atomic:%s\n" "${TAG}" > /tmp/kde-work/base-image-digest.txt
+          echo "MIRROR_IMAGE=${MIRROR}" >> ${GITHUB_ENV}
+          printf "rawhide=%s@%s\n" "${MIRROR}" "${DIGEST}" > /tmp/kde-work/base-image-digest.txt
+          echo "Pinned: $(cat /tmp/kde-work/base-image-digest.txt)"
 
       - name: Build KDE in container
         run: |
@@ -75,7 +90,7 @@ jobs:
             --volume "$(pwd)/build_files:/ctx:ro" \
             --volume "/home/runner/ccache:/ccache" \
             --volume "/tmp/kde-work:/work" \
-            quay.io/fedora-ostree-desktops/base-atomic:${BASE_IMAGE_TAG} \
+            ${MIRROR_IMAGE}:${BASE_IMAGE_TAG} \
             bash /ctx/kde-build-container.sh
 
       - name: Upload build logs
