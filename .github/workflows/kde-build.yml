@@ -17,10 +17,14 @@ jobs:
   build_kde:
     name: Build KDE from source
     runs-on: ubuntu-24.04
+    timeout-minutes: 355
     permissions:
       contents: read
       packages: write
     steps:
+      - name: Record job start
+        run: echo "JOB_START=$(date +%s)" >> ${GITHUB_ENV}
+
       - uses: mathio/gha-cleanup@v1
         with:
           remove-browsers: true
@@ -40,8 +44,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5
 
-      - name: Set up ccache
-        uses: actions/cache@v6
+      - name: Restore ccache
+        uses: actions/cache/restore@v6
         with:
           path: /home/runner/ccache
           key: ccache-kde-build-${{ github.ref_name }}-${{ github.run_id }}
@@ -83,15 +87,58 @@ jobs:
           echo "Pinned: $(cat /tmp/kde-work/base-image-digest.txt)"
 
       - name: Build KDE in container
+        id: kde_build
         run: |
+          set -uo pipefail
           mkdir -p /tmp/kde-work
-          sudo podman run --rm \
-            --privileged \
-            --volume "$(pwd)/build_files:/ctx:ro" \
-            --volume "/home/runner/ccache:/ccache" \
-            --volume "/tmp/kde-work:/work" \
-            ${MIRROR_IMAGE}:${BASE_IMAGE_TAG} \
-            bash /ctx/kde-build-container.sh
+
+          # 5h45m of build time, but never past 5h47m of total job wall clock,
+          # so the ccache save always has room to run before GitHub's 6h kill.
+          BUILD_BUDGET=$(( 345 * 60 ))
+          JOB_CEILING=$(( 347 * 60 ))
+          ELAPSED=$(( $(date +%s) - JOB_START ))
+          REMAINING=$(( JOB_CEILING - ELAPSED ))
+          LIMIT=$(( BUILD_BUDGET < REMAINING ? BUILD_BUDGET : REMAINING ))
+
+          if [ "${LIMIT}" -le 0 ]; then
+            echo "::error::Setup consumed the entire job budget, no time left to build."
+            exit 1
+          fi
+
+          echo "Setup took $(( ELAPSED / 60 ))m. Build limit: $(( LIMIT / 60 ))m."
+
+          # timeout runs *under* sudo so it supervises podman directly and the
+          # TERM actually reaches the container. Everything ccache has written
+          # to the bind mount up to that instant survives.
+          sudo timeout --signal=TERM --kill-after=120 "${LIMIT}s" \
+            podman run --rm \
+              --privileged \
+              --volume "$(pwd)/build_files:/ctx:ro" \
+              --volume "/home/runner/ccache:/ccache" \
+              --volume "/tmp/kde-work:/work" \
+              ${MIRROR_IMAGE}:${BASE_IMAGE_TAG} \
+              bash /ctx/kde-build-container.sh
+          rc=$?
+
+          if [ "${rc}" -eq 124 ] || [ "${rc}" -eq 137 ]; then
+            echo "::warning::Build hit the $(( LIMIT / 60 ))m limit and was stopped. \
+          The warm ccache is still being saved — rerun to continue from it."
+          fi
+
+          exit "${rc}"
+
+      - name: Normalise ccache ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" /home/runner/ccache || true
+          du -sh /home/runner/ccache || true
+
+      - name: Save ccache
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: /home/runner/ccache
+          key: ccache-kde-build-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: Upload build logs
         if: always()
