@@ -156,6 +156,7 @@ jobs:
             /tmp/kde-work/kde-master.tar.zst
             /tmp/kde-work/base-image-digest.txt
             /tmp/kde-work/kde-runtime-deps.txt
+            /tmp/kde-work/kde-excluded-pkgs.txt
           retention-days: 1
 
   release:
@@ -183,4 +184,5 @@ jobs:
             /tmp/kde-work/kde-master.tar.zst
             /tmp/kde-work/base-image-digest.txt
             /tmp/kde-work/kde-runtime-deps.txt
+            /tmp/kde-work/kde-excluded-pkgs.txt
           token: ${{ secrets.GITHUB_TOKEN }}

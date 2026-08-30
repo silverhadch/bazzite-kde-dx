@@ -130,6 +130,18 @@ jobs:
             --pattern 'kde-runtime-deps.txt' \
             --output build_files/kde-runtime-deps.txt
 
+          # Optional until the first 'Build KDE Master' run that stages it.
+          # install-kde-deps.py degrades gracefully when the file is absent.
+          if gh release download ${RELEASE_TAG} \
+            --repo ${{ github.repository }} \
+            --pattern 'kde-excluded-pkgs.txt' \
+            --output build_files/kde-excluded-pkgs.txt 2>/dev/null; then
+            echo "Fetched exclude list ($(wc -l < build_files/kde-excluded-pkgs.txt) packages)."
+          else
+            echo "::warning::kde-excluded-pkgs.txt not present in ${RELEASE_TAG}. \
+          Rerun 'Build KDE Master' to generate it. Proceeding without dnf excludes."
+          fi
+
           if gh release download ${RELEASE_TAG} \
             --repo ${{ github.repository }} \
             --pattern 'base-image-digest.txt' \
