@@ -51,10 +51,15 @@ ln -sf /usr/share/kde-builder/data/completions/zsh/_kde-builder \
 ln -sf /usr/share/kde-builder/data/completions/zsh/_kde-builder_projects_and_groups \
     /usr/share/zsh/site-functions/_kde-builder_projects_and_groups
 
-echo "==> Fetching and installing KDE distro dependencies..."
-python3 /ctx/install-kde-deps.py
-
+# Must run before install-kde-deps.py: once the exclude drop-in is written, dnf
+# can no longer resolve kdevelop's kf6-* dependencies and --skip-broken would
+# silently drop kdevelop from the image. Installing first lets the distro kf6
+# libs come in, then remove_installed() strips them back out and the KDE tar
+# supplies the real ones.
 echo "==> Installing dev tools..."
 dnf5 install -y --skip-broken --skip-unavailable --allowerasing \
     neovim zsh flatpak-builder kdevelop kdevelop-devel kdevelop-libs \
     || error "Some dev tools failed to install"
+
+echo "==> Fetching and installing KDE distro dependencies..."
+python3 /ctx/install-kde-deps.py

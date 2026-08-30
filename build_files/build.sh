@@ -19,10 +19,29 @@ fi
 
 if [ "$FAILED" -eq 0 ]; then
     log "Extracting KDE master tar..."
-    if ! tar -C / -xf /ctx/kde-master.tar.zst --use-compress-program=unzstd 2>&1 | tee -a "$ARTIFACTS_DIR/extract.log"; then
+    # --no-overwrite-dir keeps tar from restoring mode/mtime on directories that
+    # already exist (/usr/lib/systemd and friends), and --no-delay-directory-restore
+    # drops the deferred re-stat pass. Without these, overlayfs copy-up changes the
+    # inode identity of a pre-existing directory between creation and the final
+    # set-stat, tar reports "Directory renamed before its status could be
+    # extracted", and exits 2 even though every member extracted fine.
+    if ! tar -C / -xf /ctx/kde-master.tar.zst \
+            --use-compress-program=unzstd \
+            --no-overwrite-dir \
+            --no-delay-directory-restore 2>&1 | tee -a "$ARTIFACTS_DIR/extract.log"; then
         error "Failed to extract kde-master.tar.zst"
         FAILED=1
     fi
+fi
+
+if [ "$FAILED" -eq 0 ]; then
+    log "Verifying extracted tree..."
+    for f in /usr/bin/plasmashell /usr/bin/dolphin /usr/bin/konsole; do
+        if [ ! -x "$f" ]; then
+            error "Expected $f after extraction, not found. Archive may be truncated."
+            FAILED=1
+        fi
+    done
 fi
 
 if [ "$FAILED" -eq 0 ]; then
