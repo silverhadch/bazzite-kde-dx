@@ -59,29 +59,58 @@ jobs:
           chmod 777 /home/runner/ccache
 
       - name: Mirror rawhide base image with daily tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -uo pipefail
           mkdir -p /tmp/kde-work
           DATE=$(date +%Y%m%d)
           TAG="rawhide-${DATE}"
           MIRROR="ghcr.io/${{ github.repository_owner }}/fedora-plasma-canary-base"
           MIRROR="${MIRROR,,}"
+          UPSTREAM="quay.io/fedora/fedora-bootc"
 
-          echo "${{ secrets.GITHUB_TOKEN }}" | sudo skopeo login ghcr.io \
-            -u ${{ github.actor }} --password-stdin
+          if ! echo "${{ secrets.GITHUB_TOKEN }}" | sudo skopeo login ghcr.io \
+                -u ${{ github.actor }} --password-stdin; then
+            echo "::error::Failed to log in to ghcr.io."
+            exit 1
+          fi
 
-          echo "Mirroring quay.io/fedora-ostree-desktops/base-atomic:rawhide -> ${MIRROR}:${TAG}"
-          sudo skopeo copy --all \
-            docker://quay.io/fedora-ostree-desktops/base-atomic:rawhide \
-            docker://${MIRROR}:${TAG}
+          # Quay expires and deletes tags, so 'rawhide' is not guaranteed to
+          # resolve on any given day. Newest wins: exact 'rawhide', else the
+          # newest rawhide-dated tag, else the newest version tag. Tags look
+          # like '44' *and* '45.20260906.0', so version-sort rather than
+          # integer-match -- '^[0-9]+$' would silently pick 44 over 45.x.
+          TAGS=$(sudo skopeo list-tags docker://${UPSTREAM} 2>/dev/null | jq -r '.Tags[]' || true)
 
-          sudo skopeo copy --all \
-            docker://${MIRROR}:${TAG} \
-            docker://${MIRROR}:latest
+          SRC=""
+          if grep -qx 'rawhide' <<<"${TAGS}"; then
+            SRC="${UPSTREAM}:rawhide"
+          else
+            NEWEST=$(grep -E '^(rawhide-[0-9.]+|[0-9]+(\.[0-9]+)*)$' <<<"${TAGS}" \
+                     | sort -V | tail -1)
+            if [ -n "${NEWEST}" ]; then
+              echo "::warning::Upstream 'rawhide' tag is gone. Using newest available: ${UPSTREAM}:${NEWEST}."
+              SRC="${UPSTREAM}:${NEWEST}"
+            else
+              echo "::warning::Could not list any usable tag on ${UPSTREAM}."
+            fi
+          fi
 
-          DIGEST=$(sudo skopeo inspect docker://${MIRROR}:${TAG} --format '{{.Digest}}')
-          echo "BASE_IMAGE_TAG=${TAG}" >> ${GITHUB_ENV}
+          if [ -n "${SRC}" ] && sudo skopeo copy --all --retry-times 3 \
+                docker://${SRC} docker://${MIRROR}:${TAG}; then
+            echo "Mirrored ${SRC} -> ${MIRROR}:${TAG}"
+            sudo skopeo copy --all docker://${MIRROR}:${TAG} docker://${MIRROR}:latest
+            PIN_TAG="${TAG}"
+          else
+            echo "::warning::Could not refresh the mirror from ${UPSTREAM}. Reusing ${MIRROR}:latest."
+            if ! sudo skopeo inspect docker://${MIRROR}:latest >/dev/null 2>&1; then
+              echo "::error::Upstream is unavailable and the mirror has no :latest to fall back to."
+              exit 1
+            fi
+            PIN_TAG="latest"
+          fi
+
+          DIGEST=$(sudo skopeo inspect docker://${MIRROR}:${PIN_TAG} --format '{{.Digest}}')
+          echo "BASE_IMAGE_TAG=${PIN_TAG}" >> ${GITHUB_ENV}
           echo "MIRROR_IMAGE=${MIRROR}" >> ${GITHUB_ENV}
           printf "rawhide=%s@%s\n" "${MIRROR}" "${DIGEST}" > /tmp/kde-work/base-image-digest.txt
           echo "Pinned: $(cat /tmp/kde-work/base-image-digest.txt)"

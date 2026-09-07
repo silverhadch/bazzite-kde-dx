@@ -5,13 +5,14 @@ set -oue pipefail
 
 error() { echo -e "\n\033[1;31mERROR: $1\033[0m\n" >&2; }
 
-# Block all 32-bit packages globally
-# Safely append the excludepkgs configuration to the main section
-sudo bash -c 'cat << EOF >> /etc/dnf/dnf.conf
+# Block all 32-bit packages globally.
+# Runs as root inside the build container, so no sudo: fedora-bootc does not
+# ship it, and this executes before the build deps (which include sudo) land.
+cat >> /etc/dnf/dnf.conf << 'EOF'
 
 [main]
 excludepkgs=*.i686
-EOF'
+EOF
 
 echo "==> Installing ccache..."
 dnf5 install -y --skip-broken --skip-unavailable --allowerasing \

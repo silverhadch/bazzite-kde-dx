@@ -70,7 +70,6 @@ jobs:
       matrix:
         variant:
           - name: dx
-            base_image: quay.io/fedora-ostree-desktops/base-atomic:rawhide
             suffix: ""
 
     permissions:
@@ -150,8 +149,11 @@ jobs:
             echo "Using pinned base image: ${PINNED}"
             echo "PINNED_BASE_IMAGE=${PINNED}" >> ${GITHUB_ENV}
           else
-            echo "::warning::base-image-digest.txt not found in ${RELEASE_TAG} release. Falling back to :rawhide tag."
-            echo "PINNED_BASE_IMAGE=quay.io/fedora-ostree-desktops/base-atomic:rawhide" >> ${GITHUB_ENV}
+            # Never fall back to quay.io directly: its 'rawhide' tag expires and
+            # the mirror is the whole reason this pipeline survives that.
+            MIRROR="ghcr.io/${{ github.repository_owner }}/fedora-plasma-canary-base"
+            echo "::warning::base-image-digest.txt not found in ${RELEASE_TAG} release. Falling back to the mirror's :latest."
+            echo "PINNED_BASE_IMAGE=${MIRROR,,}:latest" >> ${GITHUB_ENV}
           fi
 
       - name: Prepare environment

@@ -10,13 +10,14 @@ mkdir -p "$DESTDIR" "$LOG_DIR"
 rm -rf /root
 mkdir -p /root/.config
 
-# Block all 32-bit packages globally
-# Safely append the excludepkgs configuration to the main section
-sudo bash -c 'cat << EOF >> /etc/dnf/dnf.conf
+# Block all 32-bit packages globally.
+# Runs as root inside the build container, so no sudo: fedora-bootc does not
+# ship it, and this executes before the build deps (which include sudo) land.
+cat >> /etc/dnf/dnf.conf << 'EOF'
 
 [main]
 excludepkgs=*.i686
-EOF'
+EOF
 
 FAILED=0
 

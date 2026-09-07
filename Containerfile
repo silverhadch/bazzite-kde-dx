@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/base-atomic:rawhide"
+ARG BASE_IMAGE="ghcr.io/silverhadch/fedora-plasma-canary-base:latest"
 
 FROM scratch AS ctx
 COPY build_files /
