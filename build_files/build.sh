@@ -45,6 +45,20 @@ if [ "$FAILED" -eq 0 ]; then
 fi
 
 if [ "$FAILED" -eq 0 ]; then
+    log "Verifying desktop platform..."
+    # No wifi, no audio, no fonts and no printing are all silent failures that
+    # only surface on real hardware after a rebase, so treat them as build
+    # failures here instead. bootstrap.sh logs the full unresolved list.
+    for p in NetworkManager-wifi alsa-sof-firmware default-fonts-core-sans \
+             glibc-all-langpacks cups mesa-dri-drivers; do
+        if ! rpm -q "$p" > /dev/null 2>&1; then
+            error "$p not installed. Check system-packages.txt against current comps."
+            FAILED=1
+        fi
+    done
+fi
+
+if [ "$FAILED" -eq 0 ]; then
     log "Updating linker cache..."
     ldconfig
 

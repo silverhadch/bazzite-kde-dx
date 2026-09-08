@@ -64,3 +64,27 @@ dnf5 install -y --skip-broken --skip-unavailable --allowerasing \
 
 echo "==> Fetching and installing KDE distro dependencies..."
 python3 /ctx/install-kde-deps.py
+
+# fedora-bootc carries no desktop content and fedora.yaml only describes what
+# KDE needs to compile and link, so nothing above ever asks for firmware,
+# fonts, codecs, langpacks, input methods or printing. system-packages.txt is
+# that layer, flattened from comps the way Fedora's own Atomic Desktops do it.
+#
+# Runs after install-kde-deps.py so the exclude drop-in already exists and none
+# of this can pull distro Plasma or KF6 in over the self-built tree.
+echo "==> Installing Fedora desktop platform..."
+mapfile -t SYSTEM_PKGS < <(grep -vE '^\s*(#|$)' /ctx/system-packages.txt)
+dnf5 install -y --skip-broken --skip-unavailable --allowerasing \
+    "${SYSTEM_PKGS[@]}" \
+    || error "Some desktop platform packages failed to install"
+
+# --skip-unavailable means a package renamed in rawhide just vanishes from the
+# image without a word. Name every one that did not land so it shows up in the
+# bootstrap log; build.sh hard-fails on the subset that must never be missing.
+MISSING=()
+for pkg in "${SYSTEM_PKGS[@]}"; do
+    rpm -q "${pkg}" > /dev/null 2>&1 || MISSING+=("${pkg}")
+done
+if [ "${#MISSING[@]}" -ne 0 ]; then
+    error "${#MISSING[@]} package(s) in system-packages.txt did not resolve: ${MISSING[*]}"
+fi

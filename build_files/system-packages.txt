@@ -1,0 +1,146 @@
+# Fedora's desktop platform layer, minus the desktop environment itself.
+#
+# Derived from the comps groups in workstation-product-environment, the same
+# source Fedora's Atomic Desktops flatten into fedora-common-ostree-pkgs.yaml
+# via comps-sync.py. Flattened and committed rather than resolved with
+# 'dnf5 group install' for the same reason Fedora flattens it: group membership
+# is not stable across releases (base-x was demoted from the environment's
+# grouplist to its optionlist in F40), so resolving at build time silently
+# changes what the image contains. An explicit list shows up in git diff.
+#
+# Refresh against a new release with libcomps:
+#   dnf5 install -y python3-libcomps
+#   python3 -c 'import libcomps,sys; c=libcomps.Comps(); c.fromxml_f(sys.argv[1]); \
+#     [print(p.name) for g in ("hardware-support","networkmanager-submodules", \
+#     "printing","input-methods","fonts") \
+#     for p in c.groups_match(id=g)[0].packages \
+#     if p.type in (libcomps.PACKAGE_TYPE_MANDATORY, libcomps.PACKAGE_TYPE_DEFAULT)]' \
+#     /path/to/comps-rawhide.xml
+#
+# Anything self-built is blocked by the exclude drop-in, so entries here can
+# never shadow the KDE tar.
+
+# --- networkmanager-submodules ---
+NetworkManager-bluetooth
+NetworkManager-wifi
+NetworkManager-wwan
+NetworkManager-config-connectivity-fedora
+ModemManager
+wpa_supplicant
+dnsmasq
+iptables-nft
+
+# --- hardware-support ---
+alsa-sof-firmware
+amd-gpu-firmware
+atheros-firmware
+b43-fwcutter
+b43-openfwwf
+brcmfmac-firmware
+cirrus-audio-firmware
+intel-audio-firmware
+intel-gpu-firmware
+iwlegacy-firmware
+iwlwifi-dvm-firmware
+iwlwifi-mvm-firmware
+libertas-firmware
+linux-firmware
+mt7xxx-firmware
+nvidia-gpu-firmware
+nxpwireless-firmware
+qcom-firmware
+realtek-firmware
+tiwilink-firmware
+usb_modeswitch
+usb_modeswitch-data
+
+# --- fonts ---
+default-fonts-cjk-mono
+default-fonts-cjk-sans
+default-fonts-cjk-serif
+default-fonts-core-emoji
+default-fonts-core-math
+default-fonts-core-mono
+default-fonts-core-sans
+default-fonts-core-serif
+default-fonts-other-mono
+default-fonts-other-sans
+default-fonts-other-serif
+abattis-cantarell-fonts
+glibc-all-langpacks
+
+# --- input-methods ---
+ibus
+ibus-anthy
+ibus-hangul
+ibus-libpinyin
+ibus-libzhuyin
+ibus-m17n
+ibus-typing-booster
+
+# --- printing ---
+bluez-cups
+colord
+cups
+cups-browsed
+cups-filters
+gutenprint
+gutenprint-cups
+hplip
+mpage
+nss-mdns
+paps
+samba-client
+system-config-printer-udev
+sane-airscan
+sane-backends
+sane-backends-drivers-scanners
+
+# --- audio and codecs ---
+alsa-ucm
+alsa-utils
+pipewire-gstreamer
+gstreamer1-plugin-libav
+gstreamer1-plugin-dav1d
+gstreamer1-plugins-good
+gstreamer1-plugins-bad-free
+gstreamer1-plugins-ugly-free
+ffmpeg-free
+
+# --- graphics and session ---
+mesa-dri-drivers
+mesa-vulkan-drivers
+libglvnd-gles
+xorg-x11-server-Xwayland
+glx-utils
+
+# --- power, thermal, memory pressure ---
+thermald
+intel-lpmd
+systemd-oomd-defaults
+uresourced
+zram-generator-defaults
+microcode_ctl
+
+# --- virt guest agents, for the qcow2 disk images ---
+qemu-guest-agent
+spice-vdagent
+spice-webdavd
+
+# --- filesystems and storage ---
+btrfs-progs
+compsize
+exfatprogs
+ntfs-3g
+cifs-utils
+hfsplus-tools
+
+# --- Fedora desktop integration ---
+# The image ships no browser and no Flathub remote without these, so Discover
+# has nothing to install from.
+firefox
+fedora-flathub-remote
+fedora-third-party
+fedora-workstation-repositories
+fedora-bookmarks
+fedora-chromium-config
