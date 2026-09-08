@@ -46,13 +46,15 @@ fi
 
 if [ "$FAILED" -eq 0 ]; then
     log "Verifying desktop platform..."
-    # No wifi, no audio, no fonts and no printing are all silent failures that
-    # only surface on real hardware after a rebase, so treat them as build
-    # failures here instead. bootstrap.sh logs the full unresolved list.
+    # Every install in this path runs with --skip-unavailable, so a rename
+    # upstream is silent. These are the ones whose absence would only show up
+    # on real hardware after a rebase. bluez is not in any comps group at all:
+    # it arrives as an rpm require of bluedevil, which this image builds
+    # itself, so it is the canary for the harvested runtime deps.
     for p in NetworkManager-wifi alsa-sof-firmware default-fonts-core-sans \
-             glibc-all-langpacks cups mesa-dri-drivers; do
+             glibc-all-langpacks cups mesa-dri-drivers bluez; do
         if ! rpm -q "$p" > /dev/null 2>&1; then
-            error "$p not installed. Check system-packages.txt against current comps."
+            error "$p not installed. See the unresolved list in bootstrap.log."
             FAILED=1
         fi
     done

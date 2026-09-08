@@ -83,6 +83,39 @@ def compute_excluded_packages(data, build_modules, ignored_modules):
     return excluded
 
 
+def harvest_distro_requires(excluded):
+    """Runtime dependencies the self-built tree no longer pulls in.
+
+    Building a KDE package from source severs every rpm dependency edge the
+    distro package had. bluez is the clearest case: it appears in no comps
+    group anywhere, and Kinoite only gets it because bluedevil requires it.
+    Build bluedevil yourself and bluetooth silently disappears from the image,
+    which is also why the systemctl enable in build.sh has nothing to enable.
+    fedora.yaml does not cover this, its rundeps are sparse and describe what
+    KDE needs to compile rather than what a running desktop needs.
+
+    So ask rpm instead: take the distro packages this image replaces and
+    collect what they require, minus the ones we supply ourselves. Must run
+    before write_dnf_dropin(), because afterwards dnf cannot see these
+    packages to query them at all."""
+    names = sorted(excluded)
+    logger.info(f"Querying rpm requires of {len(names)} replaced package(s)...")
+    process = subprocess.run(
+        ["dnf5", "repoquery", "--requires", "--resolve", "--qf", "%{name}"] + names,
+        capture_output=True,
+        text=True,
+    )
+    if process.returncode != 0:
+        logger.warning(f"repoquery failed ({process.returncode}), no requires harvested: "
+                       f"{process.stderr.strip()}")
+        return set()
+    found = {line.strip() for line in process.stdout.splitlines() if line.strip()}
+    harvested = found - excluded
+    logger.info(f"Harvested {len(harvested)} runtime dependency package(s) "
+                f"from replaced packages.")
+    return harvested
+
+
 def collect_deps(data, build_modules):
     build_modules = set(build_modules)
     builddeps = set()
@@ -168,21 +201,26 @@ def main():
         builddeps, rundeps = collect_deps(data, all_targets)
         excluded = compute_excluded_packages(data, all_targets, ignored)
 
-        # 1. Never let dnf see the self-built/ignored packages again
+        # 1. Collect what the distro versions required, while dnf can still
+        #    see them. After the drop-in is written they are unqueryable.
+        harvested = harvest_distro_requires(excluded)
+
+        # 2. Never let dnf see the self-built/ignored packages again
         write_dnf_dropin(excluded)
 
-        # 2. Install everything needed to compile, minus anything we provide ourselves
+        # 3. Install everything needed to compile, minus anything we provide ourselves
         to_install = (builddeps | rundeps) - excluded
         install(to_install)
 
-        # 3. Purge anything from the exclude list that is still on the system
+        # 4. Purge anything from the exclude list that is still on the system
         #    (preinstalled in the base image or pulled in before the drop-in).
         #    This is what prevents a stale distro lib (e.g. libappstream) from
         #    shadowing the freshly built one at build time.
         remove_installed(excluded)
 
-        # Export isolated runtime-only dependencies for the downstream final image
-        runtime_final = rundeps - excluded
+        # Export isolated runtime-only dependencies for the downstream final
+        # image, including the requires harvested from the replaced packages.
+        runtime_final = (rundeps | harvested) - excluded
         os.makedirs(os.path.dirname(EXCLUDES_EXPORT), exist_ok=True)
         with open("/work/kde-runtime-deps.txt", "w") as f:
             f.write("\n".join(sorted(runtime_final)))
