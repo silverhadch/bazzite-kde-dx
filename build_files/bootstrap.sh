@@ -82,9 +82,12 @@ dnf5 install -y --skip-broken --skip-unavailable --allowerasing \
 # --skip-unavailable means a package renamed in rawhide just vanishes from the
 # image without a word. Name every one that did not land so it shows up in the
 # bootstrap log; build.sh hard-fails on the subset that must never be missing.
-# Arch-specific entries are expected to miss on the other arch.
+# Entries carrying an arch comment are expected to miss on the other arch, so
+# they are installed but left out of the report.
+mapfile -t CHECK_PKGS < <(grep -vE '^[[:space:]]*(#|$)' /ctx/system-packages.txt \
+    | grep -v '#' | tr -s '[:space:]' '\n' | grep .)
 MISSING=()
-for pkg in "${SYSTEM_PKGS[@]}"; do
+for pkg in "${CHECK_PKGS[@]}"; do
     rpm -q "${pkg}" > /dev/null 2>&1 || MISSING+=("${pkg}")
 done
 if [ "${#MISSING[@]}" -ne 0 ]; then

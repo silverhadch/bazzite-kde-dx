@@ -60,7 +60,11 @@ EXCLUDE_ALL = [re.compile(x) for x in
 # desktops are dropped here.
 DROP = {"fros-gnome", "fedora-workstation-backgrounds", "orca", "adwaita-qt5",
         "qadwaitadecorations-qt5", "qt5-qtbase", "qt5-qtbase-gui",
-        "qt5-qtdeclarative", "qt5-qtxmlpatterns"}
+        "qt5-qtdeclarative", "qt5-qtxmlpatterns",
+        # Retired or obsoleted since the comps file this was generated from.
+        # basesystem is pulled in through an Obsoletes, so dnf installs it but
+        # rpm -q on the name fails and it shows up as unresolved.
+        "basesystem", "xorg-x11-drv-fbdev", "xorg-x11-drv-vesa"}
 
 # comps-sync's include_list: needed, but not listed in comps anywhere.
 INCLUDE = ("kernel", "kernel-modules", "kernel-modules-extra")
@@ -71,9 +75,37 @@ INCLUDE = ("kernel", "kernel-modules", "kernel-modules-extra")
 # every desktop unit has to be enabled by hand.
 PRESETS = ("redhat-systemd-presets-desktop", "redhat-systemd-presets-desktop-atomic")
 
+# Desktop services that reach Kinoite only as weak dependencies of the KDE
+# packages this image replaces, so nothing in comps and nothing in fedora.yaml
+# asks for them. install-kde-deps.py harvests recommends now, but that only
+# runs during a full KDE rebuild; these are the ones worth having immediately.
+RUNTIME = (
+    # powerdevil's power profiles have no backend without tuned-ppd
+    ("tuned", ARCHES),
+    ("tuned-ppd", ARCHES),
+    ("intel-lpmd", ("x86_64",)),
+    # screen rotation, ambient light, HID quirks
+    ("iio-sensor-proxy", ARCHES),
+    ("udev-hid-bpf", ARCHES),
+    # fingerprint auth
+    ("fprintd", ARCHES),
+    ("fprintd-pam", ARCHES),
+    # tray icons for GTK and legacy apps
+    ("libappindicator-gtk3", ARCHES),
+    # gpg prompts land on pinentry-gnome3 otherwise
+    ("pinentry-qt", ARCHES),
+    # MIPI/IPU6 laptop cameras
+    ("intel-vsc-firmware", ("x86_64",)),
+    # glibc-all-langpacks covers locales, not the fonts and spell-check set
+    ("langpacks-core-en", ARCHES),
+    # only gdb-minimal arrives as an rpm-build dependency
+    ("gdb", ARCHES),
+)
+
 LABELS = {
     "include_list": "not in comps, added by comps-sync include_list",
     "presets": "systemd preset policy, split out of fedora-release in F45",
+    "runtime": "desktop services Kinoite gets as weak deps of packages this image replaces",
 }
 
 HEADER = """# Fedora's desktop platform, minus the desktop environment itself.
@@ -136,6 +168,8 @@ def expand(root):
         pkgs.setdefault(name, [{"include_list"}, set(ARCHES)])
     for name in PRESETS:
         pkgs.setdefault(name, [{"presets"}, set(ARCHES)])
+    for name, arches in RUNTIME:
+        pkgs.setdefault(name, [{"runtime"}, set(arches)])
     return pkgs
 
 

@@ -32,12 +32,10 @@ xorg-x11-drv-amdgpu
 xorg-x11-drv-armsoc  # aarch64
 xorg-x11-drv-ati
 xorg-x11-drv-evdev
-xorg-x11-drv-fbdev
 xorg-x11-drv-intel  # x86_64
 xorg-x11-drv-nouveau
 xorg-x11-drv-openchrome  # x86_64
 xorg-x11-drv-qxl
-xorg-x11-drv-vesa  # x86_64
 xorg-x11-drv-vmware  # x86_64
 xorg-x11-drv-wacom
 xorg-x11-server-Xorg
@@ -47,7 +45,6 @@ xorg-x11-xinit
 # --- core ---
 NetworkManager
 audit
-basesystem
 bash
 coreutils
 curl
@@ -175,6 +172,20 @@ mpage
 paps
 samba-client
 system-config-printer-udev
+
+# --- desktop services Kinoite gets as weak deps of packages this image replaces ---
+fprintd
+fprintd-pam
+gdb
+iio-sensor-proxy
+intel-lpmd  # x86_64
+intel-vsc-firmware  # x86_64
+langpacks-core-en
+libappindicator-gtk3
+pinentry-qt
+tuned
+tuned-ppd
+udev-hid-bpf
 
 # --- workstation-product ---
 NetworkManager-config-connectivity-fedora
