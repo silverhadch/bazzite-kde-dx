@@ -259,23 +259,38 @@ def main():
         # Step 2: Run inside the final image (build.sh)
         # Apply the same excludes there: protects the extracted KDE tar from
         # ever being overwritten by distro packages (dnf layering, hotfixes).
+        harvested = set()
         if os.path.exists(EXCLUDES_CTX):
             with open(EXCLUDES_CTX) as f:
                 excluded = {line.strip() for line in f if line.strip()}
+
+            # Harvest here as well as in compile mode, and before the drop-in
+            # is written. kde-excluded-pkgs.txt is all the harvest needs and
+            # build.yml already downloads it, so there is no reason to make
+            # this wait for a six hour KDE rebuild. Doing it only in compile
+            # mode is why libddcutil was missing: ddcutil arrives through
+            # fedora.yaml, but libddcutil is an rpm requires of powerdevil,
+            # and powerdevil is built from source and never installed.
+            harvested = harvest_distro_deps(excluded)
+
             write_dnf_dropin(excluded)
             remove_installed(excluded)
         else:
             excluded = set()
             logger.warning(f"No exclude list at {EXCLUDES_CTX}, skipping dnf drop-in.")
 
+        runtime_deps = set()
         deps_file = "/ctx/kde-runtime-deps.txt"
         if os.path.exists(deps_file):
             with open(deps_file) as f:
-                runtime_deps = [line.strip() for line in f if line.strip() and line.strip() not in excluded]
-            logger.info("Installing final image runtime requirements...")
-            install(runtime_deps)
+                runtime_deps = {line.strip() for line in f if line.strip()}
         else:
             logger.error(f"Required dependency tracking file missing at {deps_file}")
+
+        to_install = (runtime_deps | harvested) - excluded
+        logger.info(f"Installing final image runtime requirements "
+                    f"({len(runtime_deps)} tracked, {len(harvested)} harvested)...")
+        install(to_install)
 
 
 if __name__ == "__main__":
