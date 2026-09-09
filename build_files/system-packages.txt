@@ -19,8 +19,8 @@
 #
 # This is only the distro platform. Runtime dependencies of the KDE packages
 # built from source are a separate problem, handled by install-kde-deps.py:
-# nothing here supplies them, because they are rpm requires of packages this
-# image replaces.
+# nothing here supplies them, because they are rpm dependencies of packages
+# this image replaces.
 #
 # Entries marked x86_64 or aarch64 are skipped elsewhere by --skip-unavailable.
 
@@ -157,6 +157,10 @@ NetworkManager-wwan
 dnsmasq
 iptables-nft
 wpa_supplicant
+
+# --- systemd preset policy, split out of fedora-release in F45 ---
+redhat-systemd-presets-desktop
+redhat-systemd-presets-desktop-atomic
 
 # --- printing ---
 bluez-cups

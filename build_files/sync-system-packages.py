@@ -65,8 +65,15 @@ DROP = {"fros-gnome", "fedora-workstation-backgrounds", "orca", "adwaita-qt5",
 # comps-sync's include_list: needed, but not listed in comps anywhere.
 INCLUDE = ("kernel", "kernel-modules", "kernel-modules-extra")
 
+# Fedora policy is that systemd preset files ship with fedora-release; in F45
+# they were split into their own packages. Kinoite installs both of these.
+# Without them the image inherits the base image's server preset policy and
+# every desktop unit has to be enabled by hand.
+PRESETS = ("redhat-systemd-presets-desktop", "redhat-systemd-presets-desktop-atomic")
+
 LABELS = {
     "include_list": "not in comps, added by comps-sync include_list",
+    "presets": "systemd preset policy, split out of fedora-release in F45",
 }
 
 HEADER = """# Fedora's desktop platform, minus the desktop environment itself.
@@ -90,8 +97,8 @@ HEADER = """# Fedora's desktop platform, minus the desktop environment itself.
 #
 # This is only the distro platform. Runtime dependencies of the KDE packages
 # built from source are a separate problem, handled by install-kde-deps.py:
-# nothing here supplies them, because they are rpm requires of packages this
-# image replaces.
+# nothing here supplies them, because they are rpm dependencies of packages
+# this image replaces.
 #
 # Entries marked x86_64 or aarch64 are skipped elsewhere by --skip-unavailable.
 """
@@ -127,6 +134,8 @@ def expand(root):
 
     for name in INCLUDE:
         pkgs.setdefault(name, [{"include_list"}, set(ARCHES)])
+    for name in PRESETS:
+        pkgs.setdefault(name, [{"presets"}, set(ARCHES)])
     return pkgs
 
 

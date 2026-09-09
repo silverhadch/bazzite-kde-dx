@@ -52,7 +52,8 @@ if [ "$FAILED" -eq 0 ]; then
     # it arrives as an rpm require of bluedevil, which this image builds
     # itself, so it is the canary for the harvested runtime deps.
     for p in NetworkManager-wifi alsa-sof-firmware default-fonts-core-sans \
-             glibc-all-langpacks cups mesa-dri-drivers bluez; do
+             glibc-all-langpacks cups mesa-dri-drivers bluez \
+             redhat-systemd-presets-desktop; do
         if ! rpm -q "$p" > /dev/null 2>&1; then
             error "$p not installed. See the unresolved list in bootstrap.log."
             FAILED=1
@@ -68,6 +69,18 @@ if [ "$FAILED" -eq 0 ]; then
     rm -f /etc/systemd/system/display-manager.service
     dnf5 remove -y sddm || true
 
+    # Fedora keeps its enable policy in preset files rather than in the
+    # packages, and the base image only carries the server set. The desktop
+    # presets are installed by bootstrap.sh, but the units they cover arrive
+    # later in the KDE tar, so the policy has to be applied here rather than
+    # by the rpm scriptlets. This is what the base image would have done on
+    # first boot if it were a desktop.
+    log "Applying Fedora desktop presets..."
+    systemctl preset-all || error "systemctl preset-all failed"
+
+    # Kept explicit on top of the presets: podman.socket is not a desktop
+    # default, plasmalogin is upstream KDE with no Fedora preset, and the rest
+    # are cheap to assert. Enabling an already-enabled unit is a no-op.
     log "Enabling systemd units..."
     systemctl enable accounts-daemon.service  || error "Failed to enable accounts-daemon.service"
     systemctl enable avahi-daemon.service     || error "Failed to enable avahi-daemon.service"

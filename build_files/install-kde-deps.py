@@ -5,6 +5,7 @@
 import argparse
 import logging
 import os
+import re
 import shutil
 import subprocess
 import urllib.request
@@ -21,6 +22,18 @@ DNF_DROPIN = "/etc/dnf/libdnf5.conf.d/90-kde-selfbuilt.conf"
 # Exported for the final image build (step 2), same mechanism as kde-runtime-deps.txt
 EXCLUDES_EXPORT = "/work/kde-excluded-pkgs.txt"
 EXCLUDES_CTX = "/ctx/kde-excluded-pkgs.txt"
+
+# Fedora's own Plasma configuration, which overrides upstream KDE defaults.
+# The image ships what KDE ships, so these stay out even though the distro
+# packages being replaced depend on them: plasma-workspace requires
+# kde-settings-plasma, so without this filter the harvest reinstates the whole
+# downstream config set.
+DOWNSTREAM_CONFIG = [re.compile(p) for p in (
+    r"kde-settings.*",
+    r"plasma-lookandfeel-fedora",
+    r"plasma-welcome-fedora",
+    r"fedora-chromium-config-kde",
+)]
 
 
 def load_targets(path="/ctx/targets.txt"):
@@ -83,7 +96,7 @@ def compute_excluded_packages(data, build_modules, ignored_modules):
     return excluded
 
 
-def harvest_distro_requires(excluded):
+def harvest_distro_deps(excluded):
     """Runtime dependencies the self-built tree no longer pulls in.
 
     Building a KDE package from source severs every rpm dependency edge the
@@ -94,23 +107,34 @@ def harvest_distro_requires(excluded):
     fedora.yaml does not cover this, its rundeps are sparse and describe what
     KDE needs to compile rather than what a running desktop needs.
 
-    So ask rpm instead: take the distro packages this image replaces and
-    collect what they require, minus the ones we supply ourselves. Must run
-    before write_dnf_dropin(), because afterwards dnf cannot see these
-    packages to query them at all."""
+    Recommends matter as much as requires here. Fedora hangs a lot of the
+    desktop off weak dependencies: the Phonon VLC backend, tuned-ppd behind
+    powerdevil's power profiles, fprintd-pam, iio-sensor-proxy, the GTK tray
+    shims. A requires-only query leaves all of that out.
+
+    Must run before write_dnf_dropin(), because afterwards dnf cannot see
+    these packages to query them at all."""
     names = sorted(excluded)
-    logger.info(f"Querying rpm requires of {len(names)} replaced package(s)...")
-    process = subprocess.run(
-        ["dnf5", "repoquery", "--requires", "--resolve", "--qf", "%{name}"] + names,
-        capture_output=True,
-        text=True,
-    )
-    if process.returncode != 0:
-        logger.warning(f"repoquery failed ({process.returncode}), no requires harvested: "
-                       f"{process.stderr.strip()}")
-        return set()
-    found = {line.strip() for line in process.stdout.splitlines() if line.strip()}
-    harvested = found - excluded
+    harvested = set()
+    for kind in ("--requires", "--recommends"):
+        logger.info(f"Querying rpm {kind.lstrip('-')} of {len(names)} replaced package(s)...")
+        process = subprocess.run(
+            ["dnf5", "repoquery", kind, "--resolve", "--qf", "%{name}"] + names,
+            capture_output=True,
+            text=True,
+        )
+        if process.returncode != 0:
+            logger.warning(f"repoquery {kind} failed ({process.returncode}): "
+                           f"{process.stderr.strip()}")
+            continue
+        harvested.update(line.strip() for line in process.stdout.splitlines() if line.strip())
+
+    harvested -= excluded
+    downstream = {p for p in harvested if any(b.fullmatch(p) for b in DOWNSTREAM_CONFIG)}
+    if downstream:
+        logger.info(f"Keeping upstream KDE defaults, dropping {len(downstream)} "
+                    f"downstream config package(s): {', '.join(sorted(downstream))}")
+        harvested -= downstream
     logger.info(f"Harvested {len(harvested)} runtime dependency package(s) "
                 f"from replaced packages.")
     return harvested
@@ -203,7 +227,7 @@ def main():
 
         # 1. Collect what the distro versions required, while dnf can still
         #    see them. After the drop-in is written they are unqueryable.
-        harvested = harvest_distro_requires(excluded)
+        harvested = harvest_distro_deps(excluded)
 
         # 2. Never let dnf see the self-built/ignored packages again
         write_dnf_dropin(excluded)
