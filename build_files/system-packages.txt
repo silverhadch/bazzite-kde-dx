@@ -174,18 +174,95 @@ samba-client
 system-config-printer-udev
 
 # --- desktop services Kinoite gets as weak deps of packages this image replaces ---
+NetworkManager-ppp
+buildah
+c2esp
+catdoc
+dnf5-plugins
+dymo-cups-drivers
+fatresize
+fedora-appstream-metadata
+firewall-config
 fprintd
 fprintd-pam
 gdb
+gnupg2-scdaemon
+gpsd-libs
+grub2-efi-ia32  # x86_64
+gstreamer1-plugin-dav1d
+hfsplus-tools
+hfsutils
+hidapi
+ibus-chewing
 iio-sensor-proxy
 intel-lpmd  # x86_64
 intel-vsc-firmware  # x86_64
+jasper-libs
+jfsutils
+lame
 langpacks-core-en
+langpacks-en
+langpacks-fonts-en
+libXres
 libappindicator-gtk3
+libchewing
+libddcutil
+libeis
+liberation-sans-fonts
+liberation-serif-fonts
+libfakekey
+libmng
+libmusicbrainz5
+libnetapi
+libntlm
+libopusenc
+libproxy-bin
+libqalculate
+libwnck3
+neon
+ocean-sound-theme
+opusfile
+parted
 pinentry-qt
+pipewire-config-raop
+prefixdevname
+printer-driver-brlaser
+ptouch-driver
+python3-brlapi
+python3-dasbus
+python3-louis
+python3-pyside6
+python3-shiboken6
+qt6-qt3d
+qt6-qtcharts
+qt6-qtdatavis3d
+qt6-qthttpserver
+qt6-qtimageformats
+qt6-qtlocation
+qt6-qtremoteobjects
+qt6-qtscxml
+qt6-qtsensors
+qt6-qtserialbus
+qt6-qtspeech-flite
+qt6-qtspeech-speechd
+qt6-qttools-libs-designer
+qt6-qtwayland
+samba
+samba-common-tools
+samba-libs
+samba-usershares
+shim-ia32  # x86_64
+source-foundry-hack-fonts
+splix
+startup-notification
+systemd-container
+systemd-networkd
 tuned
 tuned-ppd
 udev-hid-bpf
+unar
+wireguard-tools
+xsettingsd
 
 # --- workstation-product ---
 NetworkManager-config-connectivity-fedora

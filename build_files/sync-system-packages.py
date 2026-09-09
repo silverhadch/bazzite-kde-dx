@@ -100,6 +100,109 @@ RUNTIME = (
     ("langpacks-core-en", ARCHES),
     # only gdb-minimal arrives as an rpm-build dependency
     ("gdb", ARCHES),
+
+    # --- from compare-with-kinoite.sh against the first built image ---
+    # Everything below is a dependency of a package this image replaces, so
+    # nothing pulls it. qt6-qtwayland is the serious one: distro
+    # plasma-workspace requires it and plasma-workspace is built from source,
+    # so the Wayland session had no Qt platform plugin.
+    ("qt6-qtwayland", ARCHES),
+    ("qt6-qtimageformats", ARCHES),
+    ("qt6-qtsensors", ARCHES),
+    ("qt6-qtlocation", ARCHES),
+    ("qt6-qtscxml", ARCHES),
+    ("qt6-qtserialbus", ARCHES),
+    ("qt6-qtremoteobjects", ARCHES),
+    ("qt6-qthttpserver", ARCHES),
+    ("qt6-qtcharts", ARCHES),
+    ("qt6-qt3d", ARCHES),
+    ("qt6-qtdatavis3d", ARCHES),
+    ("qt6-qttools-libs-designer", ARCHES),
+    ("qt6-qtspeech-speechd", ARCHES),
+    ("qt6-qtspeech-flite", ARCHES),
+    ("python3-pyside6", ARCHES),
+    ("python3-shiboken6", ARCHES),
+
+    # powerdevil talks to external monitor brightness through libddcutil
+    ("libddcutil", ARCHES),
+    # kwin's emulated input and xdotool-style key injection
+    ("libeis", ARCHES),
+    ("libfakekey", ARCHES),
+    ("libXres", ARCHES),
+    ("libwnck3", ARCHES),
+    ("xsettingsd", ARCHES),
+    ("startup-notification", ARCHES),
+    # krunner's calculator runner
+    ("libqalculate", ARCHES),
+    ("ocean-sound-theme", ARCHES),
+
+    # kdenetwork-filesharing and kio-extras' smb backend
+    ("samba", ARCHES),
+    ("samba-common-tools", ARCHES),
+    ("samba-libs", ARCHES),
+    ("samba-usershares", ARCHES),
+    ("libnetapi", ARCHES),
+    ("libntlm", ARCHES),
+    ("neon", ARCHES),
+    ("libproxy-bin", ARCHES),
+    ("wireguard-tools", ARCHES),
+    ("NetworkManager-ppp", ARCHES),
+
+    # codecs and formats the KDE apps link against
+    ("lame", ARCHES),
+    ("libopusenc", ARCHES),
+    ("opusfile", ARCHES),
+    ("libmusicbrainz5", ARCHES),
+    ("gstreamer1-plugin-dav1d", ARCHES),
+    ("libmng", ARCHES),
+    ("jasper-libs", ARCHES),
+    ("pipewire-config-raop", ARCHES),
+
+    # fonts Kinoite has that the default-fonts set does not cover
+    ("liberation-sans-fonts", ARCHES),
+    ("liberation-serif-fonts", ARCHES),
+    ("source-foundry-hack-fonts", ARCHES),
+    ("langpacks-en", ARCHES),
+    ("langpacks-fonts-en", ARCHES),
+
+    # partitionmanager/kpmcore, and filesystems Fedora's comps-sync drops
+    ("parted", ARCHES),
+    ("hfsplus-tools", ARCHES),
+    ("hfsutils", ARCHES),
+    ("jfsutils", ARCHES),
+    ("fatresize", ARCHES),
+
+    # printer drivers behind plasma-print-manager
+    ("c2esp", ARCHES),
+    ("dymo-cups-drivers", ARCHES),
+    ("printer-driver-brlaser", ARCHES),
+    ("ptouch-driver", ARCHES),
+    ("splix", ARCHES),
+
+    # brltty's python bindings, pulled by the accessibility stack
+    ("python3-brlapi", ARCHES),
+    ("python3-louis", ARCHES),
+    ("python3-dasbus", ARCHES),
+
+    # hardware and boot bits Kinoite carries
+    ("hidapi", ARCHES),
+    ("gpsd-libs", ARCHES),
+    ("prefixdevname", ARCHES),
+    ("shim-ia32", ("x86_64",)),
+    ("grub2-efi-ia32", ("x86_64",)),
+
+    # misc: gpg smartcards, systemd-nspawn, ibus chewing, appstream data
+    ("gnupg2-scdaemon", ARCHES),
+    ("systemd-container", ARCHES),
+    ("systemd-networkd", ARCHES),
+    ("ibus-chewing", ARCHES),
+    ("libchewing", ARCHES),
+    ("fedora-appstream-metadata", ARCHES),
+    ("firewall-config", ARCHES),
+    ("buildah", ARCHES),
+    ("dnf5-plugins", ARCHES),
+    ("catdoc", ARCHES),
+    ("unar", ARCHES),
 )
 
 LABELS = {

@@ -53,7 +53,7 @@ if [ "$FAILED" -eq 0 ]; then
     # itself, so it is the canary for the harvested runtime deps.
     for p in NetworkManager-wifi alsa-sof-firmware default-fonts-core-sans \
              glibc-all-langpacks cups mesa-dri-drivers bluez \
-             redhat-systemd-presets-desktop; do
+             redhat-systemd-presets-desktop qt6-qtwayland libddcutil; do
         if ! rpm -q "$p" > /dev/null 2>&1; then
             error "$p not installed. See the unresolved list in bootstrap.log."
             FAILED=1
